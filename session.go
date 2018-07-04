@@ -38,6 +38,7 @@ type (
 
 	// Config is the session instance configuration
 	Config struct {
+		Use          bool
 		Provider     string
 		Key          string
 		CookieLength int
@@ -49,6 +50,8 @@ var (
 	providers = map[string]Provider{
 		"memory": MemoryProvider,
 	}
+	
+	ssn *Session
 )
 
 // New returns a session instance with configured provider
@@ -59,10 +62,12 @@ func New(cfg *Config) *Session {
 		panic(fmt.Sprintf(errStr, provider))
 	}
 
-	return &Session{
+	ssn = &Session{
 		provider: provider,
 		config:   cfg,
 	}
+
+	return ssn
 }
 
 // Start starts a session instance
@@ -84,6 +89,14 @@ func (s *Session) Start(w http.ResponseWriter, req *http.Request) {
 	} else {
 		s.store = s.provider.Read(cookieValue, s.config.MaxAge)
 	}
+}
+
+func GetDriver(config *Config, req *http.Request, res http.ResponseWriter) *Session {
+	if ssn == nil {
+		New(config)
+	}
+	ssn.Start(res, req)
+	return ssn
 }
 
 // RegisterProvider adds a provider to usable list.
